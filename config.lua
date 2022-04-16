@@ -14,7 +14,6 @@ lvim.format_on_save = true
 lvim.colorscheme = "nord"
 lvim.transparent_window = true
 vim.opt.cmdheight = 1
-lvim.builtin.lualine.style = "default"
 vim.opt.relativenumber = true
 
 -- keymappings [view all the defaults by pressing <leader>Lk]
@@ -65,15 +64,16 @@ lvim.keys.normal_mode["<esc>"] = ":noh<cr>"
 --   name = "+Trouble",
 --   r = { "<cmd>Trouble lsp_references<cr>", "References" },
 --   f = { "<cmd>Trouble lsp_definitions<cr>", "Definitions" },
---   d = { "<cmd>Trouble lsp_document_diagnostics<cr>", "Diagnostics" },
+--   d = { "<cmd>Trouble document_diagnostics<cr>", "Diagnostics" },
 --   q = { "<cmd>Trouble quickfix<cr>", "QuickFix" },
 --   l = { "<cmd>Trouble loclist<cr>", "LocationList" },
---   w = { "<cmd>Trouble lsp_workspace_diagnostics<cr>", "Diagnostics" },
+--   w = { "<cmd>Trouble workspace_diagnostics<cr>", "Wordspace Diagnostics" },
 -- }
 
 -- TODO: User Config for predefined plugins
 -- After changing plugin config exit and reopen LunarVim, Run :PackerInstall :PackerCompile
-lvim.builtin.dashboard.active = true
+lvim.builtin.alpha.active = true
+lvim.builtin.alpha.mode = "dashboard"
 lvim.builtin.notify.active = true
 lvim.builtin.terminal.active = true
 lvim.builtin.nvimtree.setup.view.side = "left"
@@ -83,7 +83,6 @@ lvim.builtin.nvimtree.show_icons.git = 0
 lvim.builtin.treesitter.ensure_installed = {
   "bash",
   "c",
-  "cpp",
   "javascript",
   "json",
   "lua",
@@ -94,9 +93,6 @@ lvim.builtin.treesitter.ensure_installed = {
   "rust",
   "java",
   "yaml",
-  "vue",
-  "rust",
-  "go",
 }
 
 lvim.builtin.treesitter.ignore_install = { "haskell" }
@@ -107,13 +103,17 @@ lvim.builtin.treesitter.highlight.enabled = true
 -- ---@usage disable automatic installation of servers
 -- lvim.lsp.automatic_servers_installation = false
 
--- ---@usage Select which servers should be configured manually. Requires `:LvimCacheReset` to take effect.
--- See the full default list `:lua print(vim.inspect(lvim.lsp.override))`
--- vim.list_extend(lvim.lsp.override, { "pyright" })
-
--- ---@usage setup a server -- see: https://www.lunarvim.org/languages/#overriding-the-default-configuration
+-- ---configure a server manually. !!Requires `:LvimCacheReset` to take effect!!
+-- ---see the full default list `:lua print(vim.inspect(lvim.lsp.automatic_configuration.skipped_servers))`
+-- vim.list_extend(lvim.lsp.automatic_configuration.skipped_servers, { "pyright" })
 -- local opts = {} -- check the lspconfig documentation for a list of all possible options
--- require("lvim.lsp.manager").setup("pylsp", opts)
+-- require("lvim.lsp.manager").setup("pyright", opts)
+
+-- ---remove a server from the skipped list, e.g. eslint, or emmet_ls. !!Requires `:LvimCacheReset` to take effect!!
+-- ---`:LvimInfo` lists which server(s) are skiipped for the current filetype
+-- vim.tbl_map(function(server)
+--   return server ~= "emmet_ls"
+-- end, lvim.lsp.automatic_configuration.skipped_servers)
 
 -- -- you can set a custom on_attach function that will be used for all the language servers
 -- -- See <https://github.com/neovim/nvim-lspconfig#keybindings-and-completion>
@@ -168,14 +168,11 @@ lvim.plugins = {
     "nacro90/numb.nvim",
     event = "BufRead",
     config = function()
-    require("numb").setup {
-      show_numbers = true, -- Enable 'number' for the window while peeking
-      show_cursorline = true, -- Enable 'cursorline' for the window while peeking
-    }
+      require("numb").setup {
+        show_numbers = true, -- Enable 'number' for the window while peeking
+        show_cursorline = true, -- Enable 'cursorline' for the window while peeking
+      }
     end,
-  },
-  {
-    "p00f/nvim-ts-rainbow",
   },
   {
     "norcalli/nvim-colorizer.lua",
@@ -192,41 +189,37 @@ lvim.plugins = {
     end,
   },
   {
-    "npxbr/glow.nvim",
-    ft = {"markdown"}
-  },
-  {
     "karb94/neoscroll.nvim",
     event = "WinScrolled",
     config = function()
-    require('neoscroll').setup({
-      -- All these keys will be mapped to their corresponding default scrolling animation
-      mappings = {'<C-u>', '<C-d>', '<C-b>', '<C-f>',
-      '<C-y>', '<C-e>', 'zt', 'zz', 'zb'},
-      hide_cursor = true,          -- Hide cursor while scrolling
-      stop_eof = true,             -- Stop at <EOF> when scrolling downwards
-      use_local_scrolloff = false, -- Use the local scope of scrolloff instead of the global scope
-      respect_scrolloff = false,   -- Stop scrolling when the cursor reaches the scrolloff margin of the file
-      cursor_scrolls_alone = true, -- The cursor will keep on scrolling even if the window cannot scroll further
-      easing_function = nil,        -- Default easing function
-      pre_hook = nil,              -- Function to run before the scrolling animation starts
-      post_hook = nil,              -- Function to run after the scrolling animation ends
-    })
+      require('neoscroll').setup({
+        -- All these keys will be mapped to their corresponding default scrolling animation
+        mappings = { '<C-u>', '<C-d>', '<C-b>', '<C-f>',
+          '<C-y>', '<C-e>', 'zt', 'zz', 'zb' },
+        hide_cursor = true, -- Hide cursor while scrolling
+        stop_eof = true, -- Stop at <EOF> when scrolling downwards
+        use_local_scrolloff = false, -- Use the local scope of scrolloff instead of the global scope
+        respect_scrolloff = false, -- Stop scrolling when the cursor reaches the scrolloff margin of the file
+        cursor_scrolls_alone = true, -- The cursor will keep on scrolling even if the window cannot scroll further
+        easing_function = nil, -- Default easing function
+        pre_hook = nil, -- Function to run before the scrolling animation starts
+        post_hook = nil, -- Function to run after the scrolling animation ends
+      })
     end
   },
   {
-		"ethanholz/nvim-lastplace",
-		event = "BufRead",
-		config = function()
-		  require("nvim-lastplace").setup({
-				lastplace_ignore_buftype = { "quickfix", "nofile", "help" },
-				lastplace_ignore_filetype = {
-					"gitcommit", "gitrebase", "svn", "hgcommit",
-				},
-				lastplace_open_folds = true,
-			})
-		end,
-	},
+    "ethanholz/nvim-lastplace",
+    event = "BufRead",
+    config = function()
+      require("nvim-lastplace").setup({
+        lastplace_ignore_buftype = { "quickfix", "nofile", "help" },
+        lastplace_ignore_filetype = {
+          "gitcommit", "gitrebase", "svn", "hgcommit",
+        },
+        lastplace_open_folds = true,
+      })
+    end,
+  },
   {
     "folke/todo-comments.nvim",
     event = "BufRead",
@@ -235,41 +228,20 @@ lvim.plugins = {
     end,
   },
   {
-    "turbio/bracey.vim",
-    cmd = {"Bracey", "BracyStop", "BraceyReload", "BraceyEval"},
-    run = "npm install --prefix server",
-  },
-  {
-    "mg979/vim-visual-multi"
-  },
-  {
     'wfxr/minimap.vim',
     run = "cargo install --locked code-minimap",
-    cmd = {"Minimap", "MinimapClose", "MinimapToggle", "MinimapRefresh", "MinimapUpdateHighlight"},
-    config = function ()
-      vim.cmd ("let g:minimap_width = 10")
-      vim.cmd ("let g:minimap_auto_start = 1")
-      vim.cmd ("let g:minimap_auto_start_win_enter = 1")
-    end,
-  },
-  {
-    "windwp/nvim-ts-autotag",
-    event = "InsertEnter",
+    cmd = { "Minimap", "MinimapClose", "MinimapToggle", "MinimapRefresh", "MinimapUpdateHighlight" },
     config = function()
-      require("nvim-ts-autotag").setup()
+      vim.cmd("let g:minimap_width = 10")
+      vim.cmd("let g:minimap_auto_start = 1")
+      vim.cmd("let g:minimap_auto_start_win_enter = 1")
     end,
   },
   {
-    "hellerve/carp-vim"
-  },
-  {
-    "vmchale/ion-vim"
+    "~/.vim/syntax/porth"
   },
   {
     "~/.vim/syntax/noq"
-  },
-  {
-    "thindil/vim-ada"
   },
 }
 
